@@ -1,0 +1,26 @@
+:root {
+  --bg-color: #f8f9fa;
+  --card-bg: #ffffff;
+  --text-primary: #1a1a1a;
+  --text-secondary: #868e96;
+  --text-muted: #adb5bd;
+  --accent-color: #007aff;
+  --border-radius: 16px;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Outfit', 'Inter', sans-serif;
+  --max-width: 420px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+}
