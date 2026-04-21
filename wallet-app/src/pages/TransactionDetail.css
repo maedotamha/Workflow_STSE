@@ -1,0 +1,98 @@
+.detail-container {
+  padding: 1.5rem;
+  background-color: var(--bg-color);
+  min-height: 100vh;
+}
+
+.detail-header {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-left: -0.5rem; /* Optical alignment */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.back-button:active {
+  opacity: 0.5;
+}
+
+.back-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.amount-section {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.detail-amount {
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.detail-merchant {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.detail-date {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.summary-card {
+  width: 100%;
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.summary-label {
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 1rem;
+}
+
+.summary-subtext {
+  font-size: 0.9rem;
+  color: #adb5bd;
+}
+
+.divider {
+  height: 1px;
+  background-color: #f1f3f5;
+  margin: 1rem 0;
+}
+
+.total {
+  margin-top: 0.5rem;
+}
+
+.summary-value {
+  font-weight: 700;
+  color: #1a1a1a;
+  font-size: 1rem;
+}
