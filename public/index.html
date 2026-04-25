@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowDesk — Approval Workflow</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', system-ui, sans-serif; box-sizing: border-box; }
+    body { margin: 0; background: #0f0f1a; }
+
+    /* Animations */
+    @keyframes fadeUp   { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+    @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+    @keyframes scaleIn  { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+    @keyframes slideIn  { from { opacity:0; transform:translateX(-16px); } to { opacity:1; transform:none; } }
+    @keyframes pulse    { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+    @keyframes shimmer  { from { background-position:-400px 0; } to { background-position:400px 0; } }
+    @keyframes spin     { to { transform: rotate(360deg); } }
+
+    .fade-up    { animation: fadeUp  0.4s cubic-bezier(.16,1,.3,1) both; }
+    .fade-in    { animation: fadeIn  0.3s ease both; }
+    .scale-in   { animation: scaleIn 0.25s cubic-bezier(.16,1,.3,1) both; }
+    .slide-in   { animation: slideIn 0.3s cubic-bezier(.16,1,.3,1) both; }
+
+    .skeleton {
+      background: linear-gradient(90deg, #1e1e2e 25%, #2a2a3e 50%, #1e1e2e 75%);
+      background-size: 400px 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 8px;
+    }
+
+    /* Login gradient background */
+    .login-bg {
+      background: radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.15) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(168,85,247,0.12) 0%, transparent 50%),
+                  radial-gradient(ellipse at 60% 80%, rgba(59,130,246,0.1) 0%, transparent 50%),
+                  #0f0f1a;
+    }
+
+    /* Sidebar */
+    .sidebar { background: #13131f; border-right: 1px solid rgba(255,255,255,0.06); }
+
+    /* Glass card */
+    .glass {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* Card hover */
+    .req-card { transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
+    .req-card:hover { transform: translateY(-2px); }
+
+    /* User card hover */
+    .user-card { transition: all 0.2s cubic-bezier(.16,1,.3,1); cursor: pointer; }
+    .user-card:hover { transform: translateY(-3px); }
+
+    /* Spinner */
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+    /* Input focus glow */
+    .input-glow:focus { box-shadow: 0 0 0 3px rgba(99,102,241,0.25); outline: none; }
+
+    /* Toast */
+    .toast-enter { animation: fadeUp 0.35s cubic-bezier(.16,1,.3,1) both; }
+
+    /* Nav item */
+    .nav-item { transition: background 0.15s, color 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.05); }
+    .nav-item.active { background: rgba(99,102,241,0.2); color: #818cf8; }
+
+    /* Stat card */
+    .stat-card { transition: all 0.2s ease; cursor: pointer; }
+    .stat-card:hover { border-color: rgba(99,102,241,0.4) !important; }
+    .stat-card.active { border-color: #6366f1 !important; background: rgba(99,102,241,0.08) !important; }
+
+    /* Modal backdrop */
+    .modal-bg { background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); }
+
+    /* Priority colors */
+    .p-high   { color: #f87171; background: rgba(239,68,68,0.12);   border-color: rgba(239,68,68,0.25); }
+    .p-medium { color: #fb923c; background: rgba(251,146,60,0.12);  border-color: rgba(251,146,60,0.25); }
+    .p-low    { color: #34d399; background: rgba(52,211,153,0.12);  border-color: rgba(52,211,153,0.25); }
+
+    /* Status colors */
+    .s-submitted  { color: #60a5fa; background: rgba(96,165,250,0.12);  border-color: rgba(96,165,250,0.25); }
+    .s-in_review  { color: #c084fc; background: rgba(192,132,252,0.12); border-color: rgba(192,132,252,0.25); }
+    .s-approved   { color: #34d399; background: rgba(52,211,153,0.12);  border-color: rgba(52,211,153,0.25); }
+    .s-rejected   { color: #f87171; background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.25); }
+    .s-archived   { color: #94a3b8; background: rgba(148,163,184,0.08); border-color: rgba(148,163,184,0.15); }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+const API = '/api';
+
+// ─── Data ────────────────────────────────────────────────────────────────────
+
+const USERS = [
+  {
+    id: 'alice', name: 'Alice Mercer', role: 'requester', actor: 'Alice (Requester)',
+    avatar: 'AM', gradient: 'from-blue-500 to-cyan-400',
+    title: 'Operations Manager',
+    desc: 'Submit new approval requests for your team or department.',
+    tag: 'Can submit requests',
+    tagColor: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
+    accentColor: '#60a5fa',
+    password: 'alice123',
+  },
+  {
+    id: 'carol', name: 'Carol Singh', role: 'reviewer', actor: 'Carol (Reviewer)',
+    avatar: 'CS', gradient: 'from-purple-500 to-violet-400',
+    title: 'Senior Analyst',
+    desc: 'Review submitted requests and pass them to the approver.',
+    tag: 'Can review requests',
+    tagColor: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
+    accentColor: '#c084fc',
+    password: 'carol123',
+  },
+  {
+    id: 'david', name: 'David Okafor', role: 'approver', actor: 'David (Approver)',
+    avatar: 'DO', gradient: 'from-emerald-500 to-teal-400',
+    title: 'Department Director',
+    desc: 'Give final approval or rejection on reviewed requests.',
+    tag: 'Can approve / reject',
+    tagColor: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+    accentColor: '#34d399',
+    password: 'david123',
+  },
+  {
+    id: 'eve', name: 'Eve Nakamura', role: 'admin', actor: 'Eve (Admin)',
+    avatar: 'EN', gradient: 'from-rose-500 to-pink-400',
+    title: 'System Administrator',
+    desc: 'Oversee all requests and archive completed approvals.',
+    tag: 'Full access',
+    tagColor: 'text-rose-400 bg-rose-400/10 border-rose-400/20',
+    accentColor: '#f87171',
+    password: 'eve123',
+  },
+];
+
+const STATUS_META = {
+  submitted: { label: 'Submitted',  dot: 'bg-blue-400',   cls: 's-submitted',  icon: '↑', step: 0 },
+  in_review: { label: 'In Review',  dot: 'bg-purple-400', cls: 's-in_review',  icon: '◎', step: 1 },
+  approved:  { label: 'Approved',   dot: 'bg-emerald-400',cls: 's-approved',   icon: '✓', step: 2 },
+  rejected:  { label: 'Rejected',   dot: 'bg-red-400',    cls: 's-rejected',   icon: '✕', step: 2 },
+  archived:  { label: 'Archived',   dot: 'bg-slate-400',  cls: 's-archived',   icon: '▣', step: 3 },
+};
+
+const CATEGORIES = ['General','Finance','HR','IT','Legal','Procurement','Facilities'];
+const WORKFLOW_STEPS = ['Request','Review','Approve','Archive'];
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
+
+function timeAgo(iso) {
+  const d = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (d < 60)    return 'just now';
+  if (d < 3600)  return `${Math.floor(d/60)}m ago`;
+  if (d < 86400) return `${Math.floor(d/3600)}h ago`;
+  return `${Math.floor(d/86400)}d ago`;
+}
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function fmtTime(iso) {
+  return new Date(iso).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(`${API}${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || 'API error');
+  }
+  return res.json();
+}
+
+// ─── Small components ─────────────────────────────────────────────────────────
