@@ -195,3 +195,204 @@ async function apiFetch(path, opts = {}) {
 }
 
 // ─── Small components ─────────────────────────────────────────────────────────
+
+function Avatar({ user, size = 'md' }) {
+  const sizes = { sm:'w-7 h-7 text-xs', md:'w-9 h-9 text-sm', lg:'w-12 h-12 text-base', xl:'w-16 h-16 text-xl' };
+  return (
+    <div className={`${sizes[size]} rounded-xl bg-gradient-to-br ${user.gradient} flex items-center justify-center font-bold text-white flex-shrink-0 shadow-lg`}>
+      {user.avatar}
+    </div>
+  );
+}
+
+function Badge({ status }) {
+  const m = STATUS_META[status];
+  if (!m) return null;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${m.cls}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
+      {m.label}
+    </span>
+  );
+}
+
+function PriBadge({ priority }) {
+  const map = { high:['p-high','High'], medium:['p-medium','Med'], low:['p-low','Low'] };
+  const [cls, label] = map[priority] || map.medium;
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${cls}`}>{label}</span>;
+}
+
+function Spinner() { return <span className="spinner" />; }
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+
+function Toast({ toasts, remove }) {
+  return (
+    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
+      {toasts.map(t => (
+        <div key={t.id} className={`toast-enter pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl text-sm font-medium text-white min-w-[260px]
+          ${t.type==='success' ? 'bg-emerald-600' : t.type==='error' ? 'bg-red-600' : 'bg-indigo-600'}`}>
+          <span className="text-base">{t.type==='success'?'✓':t.type==='error'?'✕':'i'}</span>
+          <span className="flex-1">{t.message}</span>
+          <button onClick={() => remove(t.id)} className="opacity-60 hover:opacity-100 text-lg leading-none">×</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function useToast() {
+  const [toasts, setToasts] = useState([]);
+  const add = useCallback((message, type='success') => {
+    const id = Date.now();
+    setToasts(p => [...p, { id, message, type }]);
+    setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 4000);
+  }, []);
+  const remove = useCallback(id => setToasts(p => p.filter(t => t.id !== id)), []);
+  return { toasts, add, remove };
+}
+
+// ─── Workflow Tracker ─────────────────────────────────────────────────────────
+
+function WorkflowTracker({ status }) {
+  const step = STATUS_META[status]?.step ?? 0;
+  const isRejected = status === 'rejected';
+  return (
+    <div className="flex items-center w-full select-none">
+      {WORKFLOW_STEPS.map((label, i) => {
+        const done    = i < step;
+        const current = i === step;
+        const future  = i > step;
+        const rejected = isRejected && i === 2;
+        return (
+          <React.Fragment key={label}>
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all
+                ${done    ? 'bg-indigo-500 border-indigo-500 text-white shadow-lg shadow-indigo-500/30' : ''}
+                ${current && !isRejected ? 'bg-transparent border-indigo-400 text-indigo-400 ring-4 ring-indigo-500/15' : ''}
+                ${future  ? 'bg-transparent border-white/10 text-white/20' : ''}
+                ${rejected ? 'bg-red-500/20 border-red-400 text-red-400' : ''}
+              `}>
+                {done ? '✓' : rejected ? '✕' : i+1}
+              </div>
+              <span className={`text-[10px] font-semibold whitespace-nowrap
+                ${done ? 'text-indigo-400' : current && !isRejected ? 'text-white' : 'text-white/25'}
+                ${rejected ? 'text-red-400' : ''}
+              `}>
+                {rejected ? 'Rejected' : label}
+              </span>
+            </div>
+            {i < WORKFLOW_STEPS.length - 1 && (
+              <div className={`flex-1 h-px mx-2 mb-4 transition-all ${i < step ? 'bg-indigo-500' : 'bg-white/8'}`} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Login Screen ─────────────────────────────────────────────────────────────
+
+function LoginScreen({ onLogin }) {
+  const [selected, setSelected] = useState(null);
+  const [password, setPassword] = useState('');
+  const [showPw,   setShowPw]   = useState(false);
+  const [error,    setError]    = useState('');
+  const [loading,  setLoading]  = useState(false);
+  const pwRef = useRef(null);
+
+  function selectUser(id) {
+    setSelected(id);
+    setPassword('');
+    setError('');
+    setTimeout(() => pwRef.current?.focus(), 80);
+  }
+
+  function handleLogin(e) {
+    e && e.preventDefault();
+    if (!selected) return;
+    const user = USERS.find(u => u.id === selected);
+    if (password !== user.password) {
+      setError('Incorrect password. Please try again.');
+      setPassword('');
+      pwRef.current?.focus();
+      return;
+    }
+    setError('');
+    setLoading(true);
+    setTimeout(() => { setLoading(false); onLogin(user); }, 700);
+  }
+
+  return (
+    <div className="min-h-screen login-bg flex items-center justify-center p-6">
+      <div className="w-full max-w-2xl">
+        {/* Brand */}
+        <div className="text-center mb-10 fade-up">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 shadow-xl shadow-indigo-600/40 mb-4">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold text-white tracking-tight">FlowDesk</h1>
+          <p className="text-white/40 mt-1.5 text-sm">Approval Workflow Management</p>
+        </div>
+
+        {/* Card */}
+        <div className="glass rounded-3xl p-8 fade-up" style={{animationDelay:'0.1s'}}>
+          <p className="text-white/60 text-sm font-medium mb-5">Sign in as</p>
+
+          {/* User cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+            {USERS.map((u, i) => (
+              <button key={u.id} onClick={() => selectUser(u.id)}
+                style={{animationDelay: `${0.15 + i*0.06}s`}}
+                className={`user-card fade-up text-left p-4 rounded-2xl border-2 transition-all
+                  ${selected === u.id
+                    ? 'border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/20'
+                    : 'border-white/8 bg-white/3 hover:border-white/20 hover:bg-white/5'}`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <Avatar user={u} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-sm truncate">{u.name}</p>
+                    <p className="text-white/40 text-xs truncate">{u.title}</p>
+                  </div>
+                  {selected === u.id && (
+                    <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <p className="text-white/40 text-xs leading-relaxed mb-2.5">{u.desc}</p>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${u.tagColor}`}>
+                  {u.tag}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Password field — appears once a user is selected */}
+          <form onSubmit={handleLogin} className="space-y-3">
+            <div className={`transition-all duration-300 overflow-hidden ${selected ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="relative">
+                <input
+                  ref={pwRef}
+                  type={showPw ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => { setPassword(e.target.value); setError(''); }}
+                  placeholder="Enter your password"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 input-glow focus:border-indigo-500/60 transition-colors pr-11"
+                />
+                <button type="button" onClick={() => setShowPw(p => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors text-sm select-none">
+                  {showPw ? '🙈' : '👁️'}
+                </button>
+              </div>
+              {error && (
+                <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2.5 text-red-400 text-xs font-medium mt-2">
+                  <span>⚠</span> {error}
+                </div>
+              )}
+            </div>
